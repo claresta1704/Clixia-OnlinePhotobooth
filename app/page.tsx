@@ -87,11 +87,16 @@ export default function SimpleCamera(){
     setMergedImage(null);
   };
 
+  const deletePhotos = () => {
+    setPhotos([]);
+    setMergedImage(null);
+  }
+
   const downloadMerged = () => {
     if (!mergedImage) return;
     const link = document.createElement("a");
     link.href = mergedImage;
-    link.download = "photobooth.png";
+    link.download = "clixia.png";
     link.click();
   }
 
@@ -146,12 +151,24 @@ export default function SimpleCamera(){
             />
           )}
           {mergedImage && (
-            <button
-            onClick={downloadMerged}
-            className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 bg-green-600 text-white rounded-full px-4 py-2 hover:bg-green-700">
-              Download
-            </button>
+            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 flex gap-3">
+              <button onClick={downloadMerged} className="bg-green-600 text-white rounded-full px-4 py-2 hover:bg-green-700">Download</button>
+              <button
+                onClick={() => {
+                  if (mergedImage) {
+                    localStorage.setItem("mergedPhoto", mergedImage);
+                    localStorage.setItem("frameCount", frameCount.toString());
+                    window.location.href = "/edit";
+                  }
+                }}
+                className="bg-blue-600 text-white rounded-full px-4 py-2 hover:bg-blue-700 flex items-center justify-center">
+                Edit
+              </button>
+            </div>
           )}
+          <button onClick={deletePhotos} className="absolute top-6 right-6 z-10 bg-red-500 text-white rounded-full px-4 py-2 hover:bg-black">
+            Delete
+          </button>
         </div>
       </div>
 
