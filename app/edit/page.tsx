@@ -1,6 +1,9 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { auth } from "../lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
+import { useRouter } from "next/navigation";
 
 type Sticker = { id: number; src: string; x: number; y: number;};
 
@@ -13,6 +16,19 @@ export default function EditPage() {
   const [stickers, setStickers] = useState<Sticker[]>([]);
   const [draggingId, setDraggingId] = useState<number | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [userName, setUserName] = useState<string>("");
+  const router = useRouter();
+  
+    useEffect(() => {
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        if (user?.displayName) {
+          setUserName(user.displayName);
+        } else {
+          setUserName("Guest");
+        }
+      });
+      return () => unsubscribe();
+    }, []);
 
   useEffect(() => {
     const savedPhoto = localStorage.getItem("mergedPhoto");
@@ -34,7 +50,7 @@ export default function EditPage() {
     const frame = new Image();
     frame.src = `/frames/${type}Frame${frameCount}.png`;
     await new Promise((res) => (frame.onload = res));
-    ctx.drawImage(frame, 0, 0, img.width, img.height); //supaya ukuran gambar frame tetap sama dengan gambar foto
+    ctx.drawImage(frame, 0, 0, img.width, img.height);
     const final = canvas.toDataURL("image/png");
     setFinalImage(final);
     setFrameType(type);
@@ -64,17 +80,27 @@ export default function EditPage() {
 
     ctx.drawImage(base, 0, 0);
 
+    const displayedImg = document.querySelector("img[alt='Edited']") as HTMLImageElement;
+    if (!displayedImg) return;
+    const displayWidth = displayedImg.clientWidth;
+    const displayHeight = displayedImg.clientHeight;
+
+    const scaleX = base.width / displayWidth;
+    const scaleY = base.height / displayHeight;
+
     for (const s of stickers) {
       const img = new Image();
       img.src = s.src;
       await new Promise((r) => (img.onload = r));
-      ctx.drawImage(img, s.x, s.y, 80, 80);
+
+      ctx.drawImage(img, s.x * scaleX, s.y * scaleY, 80 * scaleX, 80 * scaleY);
     }
 
     const merged = canvas.toDataURL("image/png");
     setFinalImage(merged);
     setStickers([]);
   };
+
 
   const handleDrag = (e: React.MouseEvent, id: number) => {
     e.preventDefault();
@@ -101,20 +127,46 @@ export default function EditPage() {
   const handleDrop = () => setDraggingId(null);
 
   const downloadFinal = () => {
-    if (!finalImage) return alert("Simpan dulu sebelum mendownload!");
+    if (!finalImage) return;
     const link = document.createElement("a");
     link.href = finalImage;
-    link.download = "edited_clixia.png";
+    link.download = "edited-clixia.png";
     link.click();
+
+    try {
+      const existingGallery = JSON.parse(localStorage.getItem("gallery") || "[]");
+      const updatedGallery = [...existingGallery, finalImage];
+      localStorage.setItem("gallery", JSON.stringify(updatedGallery));
+      console.log("Foto disimpan ke galeri");
+    } catch (error) {
+      console.error("Gagal menyimpan foto ke galeri", error);
+    }
   };
 
   return (
-    <div className="relative flex flex-col min-h-screen bg-black">
-      <Link href="/">
+    <div className="relative flex flex-col min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800">
+      <div className="absolute top-4 left-4 z-20 flex items-center gap-4">
+        <span className="text-white font-semibold text-lg">
+          {userName}
+        </span>
+        <p>|</p>
+        <button
+          onClick={() => router.push("/gallery")}
+          className="text-white cursor-pointer"
+        >
+          Gallery
+        </button>
+        <p>|</p>
+        <Link href="/" className="text-white cursor-pointer">
+          Logout
+        </Link>
+      </div>
+
+      <Link href="/takephoto">
         <img
           src="/arrow-back.png"
           alt="back"
-          className="absolute z-50 top-10 left-10 dark:invert object-cover w-[40px] h-[40px]"
+          className="absolute z-50 top-1/2 left-10 dark:invert object-cover w-[40px] h-[40px]"
         />
       </Link>
 
@@ -150,7 +202,7 @@ export default function EditPage() {
         )}
       </div>
 
-      <div className="absolute top-0 right-0 h-full w-[100px] bg-white bg-opacity-80 overflow-y-scroll z-10 p-2 flex flex-col items-center gap-2">
+      <div className="absolute top-0 right-0 h-full w-[100px] bg-[rgb(10,25,47)] bg-opacity-80 overflow-y-scroll z-10 p-2 flex flex-col items-center gap-2">
         {[...Array(20)].map((_, i) => (
           <img
             key={i}
@@ -163,12 +215,12 @@ export default function EditPage() {
       </div>
 
       {baseImage && (
-        <div className="flex justify-center items-center gap-4 p-4 bg-gray-200">
+        <div className="flex justify-center items-center gap-4 p-4">
           <button
             onClick={removeFrame}
             className={`px-4 py-2 rounded-full font-semibold ${
               frameType === "none"
-                ? "bg-black text-white" : "bg-white border text-black border-black hover:bg-black hover:text-white"
+                ? "bg-black text-white border border-white" : "bg-white border text-black border-black hover:bg-white hover:text-black"
             }`}>
             None
           </button>
