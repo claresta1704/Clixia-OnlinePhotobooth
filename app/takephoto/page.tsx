@@ -7,7 +7,8 @@ import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
 
 export default function SimpleCamera(){
-  const webcamRef = useRef<Webcam>(null); //bikin var webcamRef, isinya bisa berubah tapi ga re-render (tampilan kamera), tipe data harus webcam, isi awal null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const webcamRef = useRef<any>(null); //bikin var webcamRef, isinya bisa berubah tapi ga re-render (tampilan kamera), tipe data harus webcam, isi awal null
   const [photos, setPhotos] = useState<string[]>([]);
   const canvasRef = useRef<HTMLCanvasElement | null>(null); //bikin variabel tipe canvas untuk merge gambar dan hasil akhir dikonversi jadi image
   const [frameCount, setFrameCount] = useState(1); //awalnya selalu 1 frame doang
