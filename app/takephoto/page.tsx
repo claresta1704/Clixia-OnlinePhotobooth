@@ -2,11 +2,9 @@
 import React, {useRef, useState, useEffect} from "react";
 import Webcam from "react-webcam";
 import Link from "next/link";
-import { storage, auth } from "../lib/firebase";
+import { auth } from "../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
-
-console.log("✅ Firebase storage connected:", storage);
 
 export default function SimpleCamera(){
   const webcamRef = useRef<Webcam>(null); //bikin var webcamRef, isinya bisa berubah tapi ga re-render (tampilan kamera), tipe data harus webcam, isi awal null
